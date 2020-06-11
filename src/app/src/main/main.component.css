@@ -1,0 +1,9 @@
+@import "../../../../node_modules/bootstrap/dist/css/bootstrap.css";
+
+th:first-child
+{
+    z-index:-1;
+  position:sticky;
+  left:0px;
+  background-color:white;
+}

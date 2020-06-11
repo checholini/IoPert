@@ -1,0 +1,227 @@
+<div id="cy"></div>
+<alert type="info" dismissOnTimeout="10000" dismissible="true">
+  <strong>Recuerda:</strong> Puedes utilizar el raton para mover los nodos de posicion y organizar el grafo
+</alert>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-bottom">
+  <a class="navbar-brand">IoPert</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup"
+    aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+    <div class="navbar-nav">
+      <button class="btn btn-dark" (click)="openModal(addActivity)">Añadir Act.</button>
+      <button class="btn btn-dark" (click)="openModal(deleteActivity)">Borrar Act.</button>
+      <button class="btn btn-dark" (click)="openModal(editActivity)">Editar Act.</button>
+      <button class="btn btn-dark" (click)="openModal(addPrecedence)">Añadir Arco</button>
+      <button class="btn btn-dark" (click)="openModal(deleteEdges)">Borrar Arco</button>
+      <button class="btn btn-dark" (click)="solvePert()">Solucionar </button>
+    </div>
+  </div>
+  <span class="navbar-text">
+    Elaborado por Sergio Rodriguez
+  </span>
+
+</nav>
+
+<div id="results" class="container" *ngIf="showContainers">
+  <h5>Resultados</h5>
+  <table class="table table-striped table-hover table-bordered">
+    <thead>
+      <tr>
+        <th scope="col">Act.</th>
+        <th scope="col">Duracion</th>
+        <th scope="col">Inicio Minimo</th>
+        <th scope="col">Fin Minimo</th>
+        <th scope="col">Inicio Maximo</th>
+        <th scope="col">Fin Maximo</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let node of endResult">
+        <th scope="row">{{node.id}}</th>
+        <td scope="row">{{node.duration}}</td>
+        <td scope="row">{{node.minStart}}</td>
+        <td scope="row">{{node.minEnd}}</td>
+        <td scope="row">{{node.lateStart}}</td>
+        <td scope="row">{{node.lateEnd}}</td>
+      </tr>
+    </tbody>
+  </table>
+  <div>
+    <h3>Ruta critica: {{ criticalId }} </h3>
+  </div>
+</div>
+
+<div class="container" *ngIf="showContainers">
+  <h5 class>Diagrama de Gantt</h5>
+  <div class="table-responsive">
+    <table class="table table-sm ">
+      <thead>
+        <tr>
+          <th class="affix table-light">Act.</th>
+          <th scope="col" *ngFor="let j of tableCols;">
+            {{j+1}}
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of tableRows ; index as i">
+          <th *ngIf="i%2==0">{{endResult[i/2].id}}</th>
+          <th *ngIf="i%2==1"> →</th>
+          <ng-container *ngFor="let id of row">
+            <th class="bg-success" *ngIf="id==1 && i%2==0">
+            </th>
+            <th class="bg-warning" *ngIf=" id==1 && i%2==1">
+            </th>
+            <th  *ngIf=" id==null">
+            </th>
+          </ng-container>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<br><br><br>
+
+<ng-template #addActivity>
+  <div class=" modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">Agregar Actividad</h5>
+      <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <h6 id='alertBadFormat'>Recuerda que el formato ha de ser nombre;duracion </h6>
+      <form #addForm="ngForm">
+        <div class="form-group">
+          <label for="nodeIdField" class="col-form-label">Actividad: </label>
+          <input type="text" class="form-control" id="nodeIdField" [(ngModel)]='nodeIdField' name='nodeIdField'>
+        </div>
+        <!--
+          <div class="form-group">
+            <label for="durationField" class="col-form-label">Duracion: </label>
+            <input class="form-control" id="durationField" type="number" [(ngModel)]='durationField' name='durationField'>
+          </div>
+        -->
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">Cancelar</button>
+      <button type="button" class="btn btn-primary" (click)="submitAddForm(addForm)">Anadir</button>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #addPrecedence>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">Agregar Precedencia</h5>
+      <button type="button" class="close" (click)="modalRef.hide()">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form #addPrecedenceForm="ngForm">
+        <div class="form-group">
+          <label for="initialNodeField" class="col-form-label">Actividad Inicial: </label>
+          <select class="form-control" [(ngModel)]='finalNodeField' name='finalNodeField'>
+            <option [value]="node.data.id" *ngFor="let node of nodes">{{node.data.id}}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="finalNodeField" class="col-form-label">Actividad Final: </label>
+          <select class="form-control" [(ngModel)]='initialNodeField' name='initialNodeField'>
+            <option [value]="node.data.id" *ngFor="let node of nodes">{{node.data.id}}</option>
+          </select>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">Cancelar</button>
+      <button type="button" class="btn btn-primary" (click)="submitPrecedenceForm(addPrecedenceForm)">Anadir</button>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #deleteActivity>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">Eliminar Actividad</h5>
+      <button type="button" class="close" (click)="modalRef.hide()">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form #deleteNodeForm="ngForm">
+        <div class="form-group">
+          <label for="selectedActivity" class="col-form-label">Actividad: </label>
+          <select class="form-control" [(ngModel)]='selectedActivity' name='selectedActivity'>
+            <option [value]="node.data.id" *ngFor="let node of nodes">{{node.data.id}}</option>
+          </select>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">Cancelar</button>
+      <button type="button" class="btn btn-primary" (click)="deleteNode(deleteNodeForm)">Borrar</button>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #editActivity>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">Editar Actividad</h5>
+      <button type="button" class="close" (click)="modalRef.hide()">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form #editNodeForm="ngForm">
+        <div class="form-group">
+          <label for="selectedActivity" class="col-form-label">Actividad: </label>
+          <select class="form-control" [(ngModel)]='selectedActivity' name='selectedActivity'>
+            <option [value]="node.data.id" *ngFor="let node of nodes">{{node.data.id}}</option>
+          </select>
+          <div class="form-group">
+            <label for="durationField" class="col-form-label">Duracion: </label>
+            <input class="form-control" id="durationField" type="number" [(ngModel)]='durationField'
+              name='durationField'>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">Cancelar</button>
+      <button type="button" class="btn btn-primary" (click)="submitEditForm(editNodeForm)">Editar</button>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #deleteEdges>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title">Eliminar Arco</h5>
+      <button type="button" class="close" (click)="modalRef.hide()">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form #deleteEdgeForm="ngForm">
+        <div class="form-group">
+          <label for="selectedEdge" class="col-form-label">Arco: </label>
+          <select class="form-control" [(ngModel)]='selectedEdge' name='selectedEdge'>
+            <option [value]="edge.data.id" *ngFor="let edge of edges">{{edge.data.source}} a {{edge.data.target}}
+            </option>
+          </select>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" (click)="modalRef.hide()">Cancelar</button>
+      <button type="button" class="btn btn-primary" (click)="deleteEdge(deleteEdgeForm)">Borrar</button>
+    </div>
+  </div>
+</ng-template>
